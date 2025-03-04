@@ -1,17 +1,13 @@
 package co.analisys.biblioteca.service;
 
 import co.analisys.biblioteca.dto.NotificacionDTO;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.stereotype.Service;
 
+@Service
 public class NotificacionService {
-    private final RestTemplate restTemplate;
-    public NotificacionService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
+
     public void enviarNotificacion(NotificacionDTO notificacion) {
-        String email = restTemplate.getForObject(
-                "http://usuario-service/usuarios/" + notificacion.getUsuarioId() + "/email", String.class);
-// Lógica para enviar el email
-        System.out.println("Notificación enviada a " + email + ": " + notificacion.getMensaje());
+        // Simular envío de notificación
+        System.out.println("Notificación enviada a " + notificacion.getUsuarioId() + ": " + notificacion.getMensaje());
     }
 }
