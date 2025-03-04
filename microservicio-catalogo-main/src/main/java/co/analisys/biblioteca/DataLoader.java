@@ -32,7 +32,7 @@ public class DataLoader implements CommandLineRunner {
         libro1.setId(new LibroId("1"));
         libro1.setTitulo("Cien años de soledad");
         libro1.setIsbn(new ISBN("978-0307474728"));
-        libro1.setCategoria(new Categoria("Ficción"));
+        libro1.setCategoria(new Categoria("ficcion"));
         libro1.setDisponible(true);
         libro1.setAutores(Arrays.asList(autor1));
 
