@@ -3,12 +3,13 @@ package co.analisys.biblioteca.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.client.RestTemplate;
+
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class NotificacionDTO {
+public class NotificacionDTO implements Serializable {
     private String usuarioId;
     private String mensaje;
 }

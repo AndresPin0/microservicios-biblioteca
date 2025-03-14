@@ -7,7 +7,9 @@ import co.analisys.biblioteca.exception.PrestamoNoEncontradoException;
 import co.analisys.biblioteca.model.*;
 import co.analisys.biblioteca.repository.PrestamoRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +23,12 @@ public class CirculacionService {
     private CatalogoClient catalogoClient;
     @Autowired
     private NotificationClient notificationClient;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private KafkaTemplate<String, NotificacionDTO> kafkaTemplate;
+
     @Transactional
     public void prestarLibro(UsuarioId usuarioId, LibroId libroId) {
         Boolean libroDisponible = catalogoClient.isLibroDisponible(libroId.getLibroid_value());
@@ -35,14 +43,20 @@ public class CirculacionService {
             );
             prestamoRepository.save(prestamo);
             catalogoClient.actualizarDisponibilidad(libroId.getLibroid_value(), false);
-            notificationClient.enviarNotificacion(
-                    new NotificacionDTO(usuarioId.getUsuarioid_value(), "Libro prestado: " +
-                            libroId.getLibroid_value())
-            );
+// notificacionClient.enviarNotificacion(
+// new NotificacionDTO(usuarioId.getUsuarioid_value(), "Libro prestado: " +
+//            libroId.getLibroid_value())
+// );
+// Enviar notificación asíncrona
+            NotificacionDTO notificacion = new NotificacionDTO(usuarioId.getUsuarioid_value(),
+                    "Libro prestado: " + libroId.getLibroid_value());
+            rabbitTemplate.convertAndSend("notificacion.exchange", "notificacion.routingkey",
+                    notificacion);
         } else {
             throw new LibroNoDisponibleException(libroId);
         }
     }
+
     @Transactional
     public void devolverLibro(PrestamoId prestamoId) {
         Prestamo prestamo = prestamoRepository.findById(prestamoId)
@@ -50,10 +64,15 @@ public class CirculacionService {
         prestamo.setEstado(EstadoPrestamo.DEVUELTO);
         prestamoRepository.save(prestamo);
         catalogoClient.actualizarDisponibilidad(prestamo.getLibroId().getLibroid_value(), true);
-        notificationClient.enviarNotificacion(
-                new NotificacionDTO(prestamo.getUsuarioId().getUsuarioid_value(),
-                        "Libro devuelto: " + prestamo.getLibroId().getLibroid_value())
+// notificacionClient.enviarNotificacion(
+// new NotificacionDTO(prestamo.getUsuarioId().getUsuarioid_value(),
+// "Libro devuelto: " + prestamo.getLibroId().getLibroid_value())
+// );
+        NotificacionDTO notificacion = new NotificacionDTO(
+                prestamo.getUsuarioId().getUsuarioid_value(),
+                "Libro devuelto: " + prestamo.getLibroId().getLibroid_value()
         );
+        kafkaTemplate.send("devolucion-libro", notificacion);
     }
     public List<Prestamo> obtenerTodosPrestamos() {
         return prestamoRepository.findAll();
